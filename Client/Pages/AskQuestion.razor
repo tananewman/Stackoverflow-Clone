@@ -1,0 +1,44 @@
+@page "/nullreference/ask"
+@using BlazorUiDemo.Shared
+@using System;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@* If something is not loaded.... *@
+
+<h1 class="ask-question-title">Ask a public question</h1>
+
+<form class="question-form">
+    <div class="question-title">
+        <h2>Title</h2>
+        <div>Be specific and imagine you’re asking a question to another person</div>
+        <input @bind="@QuestionTitle" class="form-control" id="question-title">
+    </div>
+    <div class="question-body">
+        <h2>Body</h2>
+        <div>Include all the information someone would need to answer your question</div>
+        <textarea @bind="@QuestionBody" class="form-control" id="question-body" rows="5"></textarea>
+    </div>
+</form>
+<button @onclick="()=>SubmitQuestion(QuestionTitle, QuestionBody)" class="submit-question-btn">Submit your question</button>
+
+@code {
+    public string QuestionTitle { get; set; }
+    public string QuestionBody { get; set; }
+
+    public async Task SubmitQuestion(string questionTitle, string questionBody)
+    {
+        // hack to clear text box
+        QuestionTitle = string.Empty;
+        QuestionBody = string.Empty;
+
+        var question = new QuestionModel
+        {
+            Title = questionTitle,
+            Body = questionBody
+        };
+
+        var response = await Http.PostJsonAsync<QuestionModel>("questions", question);
+        NavigationManager.NavigateTo($"nullreference/{response.Uuid}");
+    }
+}

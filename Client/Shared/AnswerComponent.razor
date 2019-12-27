@@ -1,0 +1,37 @@
+@inject HttpClient Http
+@using BlazorUiDemo.Shared
+<div class="answer-container">
+    <div class="answer d-flex @TopAnswerClass">
+
+        <div class="vote-cell">
+            <i class="fas fa-caret-up" @onclick="()=>OnUpvote.InvokeAsync(Answer)"></i>
+            <div class="vote-count text-center">@Answer.VoteCount</div>
+            <i class="fas fa-caret-down" @onclick="()=>OnDownvote.InvokeAsync(Answer)"></i>
+        </div>
+
+        <p class="answer-content">
+            @Answer.Body
+        </p>
+    </div>
+    @if (IsTopAnswer)
+    {
+        <div class="top-answer-checkmark"></div>
+    }
+    <div class="owner-container answer-owner">
+        <div class="owner-info">
+            <div class="time-info">answered @Answer.TimeStamp.ToString("MMM dd yy 'at' HH:mm")</div>
+            <div class="owner-avatar d-inline-block">
+                <img src="@Answer.User.ProfilePictureUrl">
+            </div>
+            <a href="" class="user-details">@Answer.User.Username</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public AnswerModel Answer { get; set; }
+    [Parameter] public bool IsTopAnswer { get; set; }
+    [Parameter] public EventCallback<AnswerModel> OnUpvote { get; set; }
+    [Parameter] public EventCallback<AnswerModel> OnDownvote { get; set; }
+    private string TopAnswerClass => IsTopAnswer ? "top-answer" : string.Empty;
+}

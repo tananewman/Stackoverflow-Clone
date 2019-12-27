@@ -1,0 +1,22 @@
+@inject HttpClient Http
+@using BlazorUiDemo.Shared
+
+<div class="question d-flex">
+
+    <div class="vote-cell">
+        <i class="fas fa-caret-up" @onclick="()=>OnQuestionUpvote.InvokeAsync(Question)"></i>
+        <div class="vote-count">@Question.VoteCount</div>
+        <i class="fas fa-caret-down" @onclick="()=>OnQuestionDownvote.InvokeAsync(Question)"></i>
+    </div>
+
+    <p class="question-content">
+        @Question.Body
+    </p>
+
+</div>
+
+@code {
+    [Parameter] public QuestionModel Question { get; set; }
+    [Parameter] public EventCallback<QuestionModel> OnQuestionUpvote { get; set; }
+    [Parameter] public EventCallback<QuestionModel> OnQuestionDownvote { get; set; }
+}

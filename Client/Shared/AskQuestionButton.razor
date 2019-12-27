@@ -1,0 +1,10 @@
+@inject NavigationManager NavigationManager
+
+<button @onclick="NavigateToAskQuestion">Ask Question</button>
+
+@code {
+    private void NavigateToAskQuestion()
+    {
+        NavigationManager.NavigateTo("nullreference/ask");
+    }
+}

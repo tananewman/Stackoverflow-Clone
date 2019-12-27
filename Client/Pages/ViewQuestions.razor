@@ -1,0 +1,70 @@
+@page "/nullreference/questions"
+@using BlazorUiDemo.Shared
+@using System;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@if (Questions == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container-fluid null-reference view-questions">
+        <div class="d-flex justify-content-between title-container">
+            <h1 class="title">All Questions</h1>
+            <AskQuestionButton></AskQuestionButton>
+        </div>
+        <div class="question-count">@Questions?.Count questions</div>
+
+        @foreach (var question in Questions)
+        {
+            <div class="question-summary d-flex">
+                <div class="question-stats d-flex flex-column">
+                    <div class="stats-vote-count">
+                        <span>@question.VoteCount</span>
+                        <span>votes</span>
+                    </div>
+                    <div class="stats-answer-count">
+                        <span>@Answers.Where(x => x.QuestionUuid == question.Uuid)?.Count()</span>
+                        <span>answers</span>
+                    </div>
+                </div>
+                <div class="summary">
+                    <a class="d-block" href="nullreference/@question.Uuid">@question.Title</a>
+                    <div class="excerpt">@question.Body</div> @* Would grab substr irl *@
+                </div>
+
+                <div class="owner-container answer-owner">
+                    <div class="owner-info">
+                        <div class="time-info">asked @question.TimeStamp.ToString("MMM dd yy 'at' HH:mm")</div>
+                        <div class="owner-avatar d-inline-block">
+                            <img src="@question.Owner.ProfilePictureUrl">
+                        </div>
+                        <a href="" class="user-details">@question.Owner.Username</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+
+}
+
+@code {
+    public IList<QuestionModel> Questions { get; set; }
+    public IList<AnswerModel> Answers { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tasks = new List<Task>
+        {
+            Http.GetJsonAsync<List<QuestionModel>>($"questions")
+                .ContinueWith(questionResult => Questions = questionResult.Result),
+            Http.GetJsonAsync<List<AnswerModel>>($"answers")
+                .ContinueWith(answersResult => Answers = answersResult.Result)
+        };
+
+        await Task.WhenAll(tasks);
+    }
+}

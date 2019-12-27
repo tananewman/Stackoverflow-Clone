@@ -1,0 +1,196 @@
+@page "/nullreference"
+@page "/nullreference/{QuestionId}"
+@using BlazorUiDemo.Shared
+@using System;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@if (_question == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container-fluid null-reference">
+        <div class="d-flex justify-content-between title-container">
+            <h1 class="title">@_question.Title</h1>
+            <AskQuestionButton></AskQuestionButton>
+        </div>
+
+        <div class="question-title-meta">
+            <span class="m-title">Asked</span>
+            <span class="m-content">@(DateTime.Now.Year - _question.TimeStamp.Year) years, @(_question.TimeStamp.Month - @DateTime.Now.Month) months ago</span>
+            <span class="m-title">Active</span>
+            <span class="m-content">11 months ago</span> @* TODO: format all this stuff*@
+            <span class="m-title">Viewed</span>
+            <span class="m-content">2 billion times</span>
+        </div>
+
+        <div class="row">
+            <div class="col-9">
+                <QuestionComponent Question="@_question" OnQuestionUpvote="UpvoteQuestion" OnQuestionDownvote="DownvoteQuestion"></QuestionComponent>
+
+                @* TODO: componentize *@
+                <div class="owner-container">
+                    <div class="owner-info">
+                        <div class="time-info">asked @_question.TimeStamp.ToString("MMM dd yy 'at' HH:mm")</div>
+                        @* <div class="time-info">asked Nov 10 '08 at 2:34</div> *@
+                        <div class="owner-avatar d-inline-block">
+                            <img src="@_question.Owner.ProfilePictureUrl">
+                        </div>
+                        <a href="" class="user-details">@_question.Owner.Username</a>
+                    </div>
+                </div>
+
+                @* Answers *@
+                <div class="answers-header d-flex justify-content-between">
+                    <h2 class="answer-count d-inline-block">
+                        @_answers.Count Answers
+                    </h2>
+                    <div class="tabs d-inline-block">
+                        <a class="@(CurrentSortMethod == SortMethod.date ? "selected" : string.Empty)" @onclick="SortAnswersByDateDesc">oldest</a>
+                        <a class="@(CurrentSortMethod == SortMethod.votes ? "selected" : string.Empty)" @onclick="SortAnswersByVotesDesc">votes</a>
+                    </div>
+                </div>
+
+                @foreach (var answer in _answers)
+                {
+                    var isTopAnswer = answer == GetTopAnswer() ? true : false;
+                    <AnswerComponent answer="@answer" IsTopAnswer = "@isTopAnswer" OnUpvote="UpvoteAnswer" OnDownvote="DownvoteAnswer"></AnswerComponent>
+                }
+
+                @* Answer Form *@
+                <form class="answer-form">
+                    <div class="form-group">
+                        <label for="answer-form">Your Answer</label>
+                        <textarea @bind="@_answerText" class="form-control" id="answer-form" rows="3"></textarea>
+                    </div>
+                </form>
+                <button class="btn btn-primary" @onclick="()=>SubmitAnswer(_answerText)">Post Your Answer</button>
+            </div>
+
+            <div class="col-3">
+                <div class="side-content">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse odio libero, sollicitudin ac neque non,
+                    tempor condimentum mi. Quisque cursus condimentum erat et convallis.
+                    Etiam ullamcorper feugiat magna ac dictum. Nulla aliquam fermentum placerat.
+                    Aliquam finibus laoreet felis, ut aliquam nunc dictum sit amet. Ut tempus ante aliquam arcu finibus,
+                    in convallis risus condimentum.
+                    Quisque pharetra justo at metus suscipit, vel egestas libero posuere.
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter] public string QuestionId { get; set; }
+    public enum SortMethod
+    {
+        votes,
+        date
+    }
+    public SortMethod CurrentSortMethod { get; set; } = SortMethod.votes;
+    private QuestionModel _question;
+    private IList<AnswerModel> _answers;
+    private string _answerText;
+    protected override async Task OnInitializedAsync()
+    {
+        var tasks = new List<Task>
+        {
+            Http.GetJsonAsync<QuestionModel>($"questions/{QuestionId}")
+                .ContinueWith(questionResult => _question = questionResult.Result),
+            Http.GetJsonAsync<List<AnswerModel>>($"answers/{QuestionId}")
+                .ContinueWith(answersResult => _answers = answersResult.Result)
+        };
+
+        await Task.WhenAll(tasks);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (QuestionId != _question.Uuid)
+        {
+            await this.OnInitializedAsync();
+        }
+    }
+
+    private void NavigateToAskQuestion()
+    {
+        NavigationManager.NavigateTo("nullreference/ask");
+    }
+
+    private async Task SubmitAnswer(string answerBody)
+    {
+        // hack to clear the textbox
+        _answerText = string.Empty;
+
+        var newAnswer = new AnswerModel
+        {
+            QuestionUuid = _question.Uuid,
+            Body = answerBody
+        };
+
+        var addedAnswer = await Http.PostJsonAsync<AnswerModel>($"answers/{_question.Uuid}", newAnswer);
+        _answers.Add(addedAnswer);
+    }
+
+    private AnswerModel GetTopAnswer()
+    {
+        // skip null check for now.
+        var sortedAnswers = _answers.OrderByDescending(a => a.VoteCount).ToList();
+
+        // we're only gonna pick a top answer if it has distinguished itself as the true cream of the crop and not by default
+        if (sortedAnswers.Count == 1)
+        {
+            return null;
+        }
+
+        var topAnswer = _answers.GroupBy(a => a.VoteCount)
+            .OrderByDescending(g => g.Key)
+            .Take(1)
+            .Where(x => x.Count() == 1)
+            .Select(x => x.First())
+            .SingleOrDefault();
+
+        return topAnswer;
+    }
+
+    private async Task UpvoteQuestion()
+    {
+        _question.VoteCount++;
+        await Http.PutAsync($"questions/{QuestionId}/upvote", null);
+    }
+
+    private async Task DownvoteQuestion()
+    {
+        _question.VoteCount--;
+        await Http.PutAsync($"questions/{QuestionId}/downvote", null);
+    }
+
+    private async Task UpvoteAnswer(AnswerModel answer)
+    {
+        answer.VoteCount++;
+        await Http.PutAsync($"answers/{answer.Uuid}/upvote", null);
+    }
+
+    private async Task DownvoteAnswer(AnswerModel answer)
+    {
+        answer.VoteCount--;
+        await Http.PutAsync($"answers/{answer.Uuid}/downvote", null);
+    }
+
+    private void SortAnswersByDateDesc()
+    {
+        CurrentSortMethod = SortMethod.date;
+        _answers = _answers.OrderByDescending(x => x.TimeStamp).ToList();
+    }
+
+    private void SortAnswersByVotesDesc()
+    {
+        CurrentSortMethod = SortMethod.votes;
+        _answers = _answers.OrderByDescending(x => x.VoteCount).ToList();
+    }
+}

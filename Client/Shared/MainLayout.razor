@@ -1,0 +1,33 @@
+﻿@inherits LayoutComponentBase
+
+<header></header>
+
+<div class="sidebar">
+    <NavMenu />
+</div>
+
+<div class="main">
+    <div class="top-row d-flex justify-content-between">
+        <div>Products</div>
+
+        <!-- Search form -->
+        <form class="form-inline">
+            <span class="iconify" data-icon="ant-design:search-outline" data-inline="false" style="color: #BBC0C4;" data-width="18" data-height="18"></span>
+            <input class="form-control form-control-sm ml-3 w-75" type="text" placeholder="Search..." aria-label="Search">
+        </form>
+
+        <div class="top-icons d-flex align-items-center">
+            <img src="https://graph.facebook.com/10161817933765553/picture?type=large" alt="" width="24" height="24" class="bar-sm -avatar js-avatar-me">
+            <i class="fas fa-inbox"></i>
+            <i class="fas fa-trophy"></i>
+            <i class="fas fa-question-circle"></i>
+            <i class="fas fa-snowflake"></i>
+            <i class="far fa-comment-alt"></i>
+        </div>
+
+    </div>
+
+    <div class="content p-4">
+        @Body
+    </div>
+</div>
